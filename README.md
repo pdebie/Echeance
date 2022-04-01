@@ -16,5 +16,6 @@ Les notions qui interviennent dans le calcul des échéances sont :
 
 Les variations des cas présentés dépendent donc du quantième de perception et de la date de début et de fin de contrat.
 
-Soit le contrat débute « avant » le quantième soit « après ».
-Le troisième cas diffère des autres car il ne génère pas de rompu. Il faut pour cela que le quantième soit à J-1 du jour du début du contrat.
+- Soit le contrat débute « avant » le quantième.
+- Soit « après ».
+- Le troisième cas diffère des autres car il ne génère pas de rompu. Il faut pour cela que le quantième soit à J-1 du jour du début du contrat.
