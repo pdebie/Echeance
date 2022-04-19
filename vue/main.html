@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8'>
+  <title>Echeancier</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.1.0/build/pure-min.css"
+    integrity="sha384-yHIFVG6ClnONEA5yB5DJXfW2/KC173DIQrYoZMEtBvGzmf0PKiGyNEqe9N6BNDBH" crossorigin="anonymous">
+  <style>
+    .l-box {
+      padding: 1em;
+    }
+  </style>
+  <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+  <script>dayjs().format();</script>
+</head>
+
+<body>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+    }
+  }
+</script>
+
+  <div id="app">
+
+    <div class="pure-g">
+      <div class="pure-u-1-3">
+        <div class="l-box">
+          <form class="pure-form pure-form-stacked">
+            <fieldset>
+              <div class="pure-control-group">
+                <label for="start">Date de début</label>
+                <input type="date" id="start" v-model="param.start" min="2018-01-01" max="2033-12-31" step="1">
+                <button class="pure-button" @click="plusdate">Plus</button>
+
+                <label for="end">Date de fin</label>
+                <input type="date" id="end" v-model="param.end" min="2018-01-01" max="2033-12-31">
+              </div>
+            </fieldset>
+            <fieldset>
+              <div class="pure-control-group">
+                <label for="quantieme">Quantieme</label>
+                <input type="number" id="quantieme" v-model="param.quantieme" min="1" max="28">
+              </div>
+              <div class="pure-control-group">
+                <label for="periode">Période en mois (3= trimestriel)</label>
+                <input type="number" id="periode" v-model="param.periode" min="1" max="12">
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <div class="pure-control-group">
+                <label> {{ labavant }} </label>
+                <label> {{ labrompu }} </label>
+                <label> {{ param.start }} </label>
+              </div>
+            </fieldset>
+
+          </form>
+          <button class="pure-button" @click="echeancier">Calcul</button>
+        </div>
+      </div>
+
+      <div class="pure-u-1-3">
+        <h2>Echu</h2>
+        <div class="l-box">
+          <table class="pure-table">
+            <thead>
+              <tr>
+                <th>Date dûe</th>
+                <th>Couvre du</th>
+                <th>au</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in echeances.echu">
+                <td> {{ mydtos(item.du) }} </td>
+                <td> {{ mydtos(item.couvre.start) }} </td>
+                <td> {{ mydtos(item.couvre.end) }} </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pure-u-1-3">
+        <h2>A échoir</h2>
+        <div class="l-box">
+          <table class="pure-table">
+            <thead>
+              <tr>
+                <th>Date dûe</th>
+                <th>Couvre du</th>
+                <th>au</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in echeances.echoir">
+                <td> {{ mydtos(item.du) }} </td>
+                <td> {{ mydtos(item.couvre.start) }} </td>
+                <td> {{ mydtos(item.couvre.end) }} </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp } from 'vue'
+
+    createApp({
+      data() {
+        return {
+          param: {
+            start: "2022-05-05",
+            end: "2024-05-04",
+            quantieme: 10,
+            periode: 1
+          },
+          labavant: '',
+          labrompu: '',
+          echeances: {
+            echu: [],
+            echoir: []
+          }
+        }
+      },
+      watch: {
+        param: {
+          handler(newValue, oldValue) {
+            this.echeancier()
+          },
+          deep: true
+        }
+      },
+      methods: {
+        plusdate: function() {
+          
+        },
+        mydtos: function (_adate) {
+          const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }
+          var result = ''
+          try {
+            result = _adate.toLocaleDateString(undefined, options)
+          } catch (error) {
+            result = 'error'
+          }
+          return result
+        },
+        moisSuivant: function (a_date, periode) {
+          var newDate = new Date(a_date)
+          newDate.setMonth(newDate.getMonth() + periode)
+          return newDate
+        },
+        jourSuivant: function (a_date) {
+          var newDate = new Date(a_date);
+          // Comment ça se passe sur les bornes ?
+          newDate.setDate(newDate.getDate() + 1);
+          return newDate;
+        },
+        ajouteEcheance: function (_dateDu, _couvreStart, _couvreEnd, _echuechoir) {
+          var uneEcheance = {};
+          uneEcheance.du = new Date(_dateDu);
+          uneEcheance.couvre = {};
+          uneEcheance.couvre.start = new Date(_couvreStart);
+          uneEcheance.couvre.end = new Date(_couvreEnd);
+          _echuechoir.push(uneEcheance);
+        },
+        startApresQuantieme: function (_start, _quantieme) {
+          var startDay = _start.getDate();
+          console.log("startDay, quantieme", startDay, _quantieme);
+          if (startDay - _quantieme == 1) {
+            this.labrompu = 'Sans Rompu'
+          }
+          else {
+            this.labrompu = 'Avec Rompu'
+          }
+
+          if (startDay > _quantieme) {
+            this.labavant = 'Après';
+            return true;
+          }
+          else {
+            this.labavant = 'Avant';
+            return false;
+          }
+        },
+
+        /** calculEcheance : toutes les échéances
+         * 
+         */
+        calculEcheance: function (_start, _end, _quantieme, _echeances) {
+          /* 
+            Préparation première échéance échue
+            0        1         2         3
+            123456789012345678901234567890
+              s      q
+          */
+          console.log("Echu");
+          var dateDu = new Date(_start);
+          dateDu.setDate(_quantieme);
+          console.log("dateDu", this.mydtos(dateDu), "Start", this.mydtos(_start), " End", this.mydtos(_end));
+
+          if (this.startApresQuantieme(_start, _quantieme)) {
+            dateDu = this.moisSuivant(dateDu, 1);
+          }
+
+          var c_start = new Date(_start);
+          var c_end = new Date(dateDu);
+          this.ajouteEcheance(dateDu, c_start, c_end, _echeances.echu);
+
+          /** échéances suivantes */
+          var parcoursFini = false;
+          while (!parcoursFini) {
+            dateDu = this.moisSuivant(dateDu, 1);
+            c_start = this.jourSuivant(c_end);
+            c_end = this.moisSuivant(c_end, 1);
+            if (dateDu < _end) {
+              this.ajouteEcheance(dateDu, c_start, c_end, _echeances.echu);
+            }
+            else
+              parcoursFini = true;
+          }
+
+          /* 
+            Préparation première échéance à échoir
+          */
+          console.log("A échoir");
+          var dateDu = new Date(_start);
+          var c_start = new Date(_start);
+          console.log("dateDu", this.mydtos(dateDu), "Start", this.mydtos(_start), " End", this.mydtos(_end));
+
+          var c_end = new Date(_start);
+          c_end.setDate(_quantieme - 1);
+          if (this.startApresQuantieme(_start, _quantieme)) {
+            c_end = this.moisSuivant(c_end, 1);
+          }
+
+          this.ajouteEcheance(dateDu, c_start, c_end, _echeances.echoir);
+
+          /** échéances suivantes */
+          var parcoursFini = false;
+          while (!parcoursFini) {
+            dateDu = this.jourSuivant(c_end);
+            c_start = this.jourSuivant(c_end);
+            c_end = this.moisSuivant(c_end, 1);
+
+            if (dateDu < _end) {
+              this.ajouteEcheance(dateDu, c_start, c_end, _echeances.echoir);
+            }
+            else
+              parcoursFini = true;
+          }
+
+        },
+
+        /** Echeancier fonction principale
+         * 
+         */
+        echeancier: function () {
+          var now = dayjs()
+          console.log("--- Starting")
+          this.echeances.echu = []
+          this.echeances.echoir = []
+          this.calculEcheance(new Date(this.param.start), new Date(this.param.end), this.param.quantieme, this.echeances)
+          /* gerer le HTMLInputElement.stepUp() sur les dates */
+        }
+      },
+    }).mount('#app')
+  </script>
+
+</body>
+
+</html>
